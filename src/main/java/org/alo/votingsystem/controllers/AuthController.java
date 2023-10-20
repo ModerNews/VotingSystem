@@ -1,13 +1,11 @@
 package org.alo.votingsystem.controllers;
 
-import jakarta.validation.Valid;
+import org.alo.votingsystem.models.Token;
 import org.alo.votingsystem.models.User;
 import org.alo.votingsystem.repository.UserRepository;
 import org.alo.votingsystem.requests.LoginRequest;
 import org.alo.votingsystem.requests.RegisterRequest;
 import org.alo.votingsystem.responses.CodeResponse;
-import org.apache.tomcat.util.json.JSONParser;
-import org.aspectj.apache.bcel.classfile.Code;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
