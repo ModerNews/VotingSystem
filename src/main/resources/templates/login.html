@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org">
 <head>
-    <title>Spring Security Example </title>
+    <title>Vote Service OAuth2 login</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 </head>
 <body>
 <div th:if="${param.error}">
@@ -10,10 +11,37 @@
 <div th:if="${param.logout}">
     You have been logged out.
 </div>
-<form th:action="@{/login}" method="post">
+<form action="/auth/login">
     <div><label> User Name : <input type="text" name="username"/> </label></div>
     <div><label> Password: <input type="password" name="password"/> </label></div>
     <div><input type="submit" value="Sign In"/></div>
 </form>
+<script>
+    $(document).ready(function () {
+        $('form').submit(function(event) {register(event)});
+    });
+
+    function convertFormToJSON(form) {
+        return $(form)
+            .serializeArray()
+            .reduce(function (json, { name, value }) {
+                json[name] = value;
+                return json;
+            }, {});
+    }
+
+    function register(event) {
+        event.preventDefault();
+        var form_data = convertFormToJSON(event.target);
+        $.ajax({
+            url: '/auth/code',
+            type: "POST",
+            data: JSON.stringify(form_data),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data) {window.location.href = "/code/success?code=" + data.code;}
+        });
+    }
+</script>
 </body>
 </html>

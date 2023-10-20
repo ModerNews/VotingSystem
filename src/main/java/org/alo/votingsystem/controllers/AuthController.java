@@ -3,23 +3,30 @@ package org.alo.votingsystem.controllers;
 import jakarta.validation.Valid;
 import org.alo.votingsystem.models.User;
 import org.alo.votingsystem.repository.UserRepository;
+import org.alo.votingsystem.requests.LoginRequest;
 import org.alo.votingsystem.requests.RegisterRequest;
+import org.alo.votingsystem.responses.CodeResponse;
+import org.apache.tomcat.util.json.JSONParser;
+import org.aspectj.apache.bcel.classfile.Code;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import javax.print.attribute.standard.Media;
-import javax.print.attribute.standard.MediaTray;
+import javax.validation.Valid;
 
 
 @RestController
-@RequestMapping(value = "/auth")
+@RequestMapping(value = "/auth",
+                consumes = {"application/x-www-form-urlencoded", "application/x-www-form-urlencoded;charset=UTF-8", "application/json"})
 public class AuthController {
+    @Autowired
+    AuthenticationManager authenticationManager;
+
     @Autowired
     UserRepository userRepository;
 
@@ -27,7 +34,8 @@ public class AuthController {
     PasswordEncoder encoder;
 
     @PostMapping(value = "/register",
-                 consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+                 consumes = {MediaType.APPLICATION_JSON_VALUE})
+    // For request body validation, reroute submit to application/json via ajax/JQuery
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             return ResponseEntity.badRequest()
@@ -41,5 +49,21 @@ public class AuthController {
         userRepository.save(user);
 
         return ResponseEntity.ok("User registered successfully");
+    }
+
+    @PostMapping(value = "/code",
+            consumes = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest request) {
+        if (request.getUsername().equals("")) {
+            return ResponseEntity.badRequest().body("Username cannot be empty");
+        } else if (request.getPassword().equals("")) {
+            return ResponseEntity.badRequest().body("Password cannot be empty");
+        }
+
+        Authentication authentication = authenticationManager
+                .authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+
+        Token token = new Token();
+        return ResponseEntity.ok(new CodeResponse("def" + token.generate_access_token(125)));
     }
 }
