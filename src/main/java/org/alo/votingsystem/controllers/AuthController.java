@@ -6,13 +6,16 @@ import org.alo.votingsystem.repository.UserRepository;
 import org.alo.votingsystem.requests.LoginRequest;
 import org.alo.votingsystem.requests.RegisterRequest;
 import org.alo.votingsystem.responses.CodeResponse;
+import org.alo.votingsystem.security.jwt.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -30,6 +33,9 @@ public class AuthController {
 
     @Autowired
     PasswordEncoder encoder;
+
+    @Autowired
+    private JwtUtils jwtUtils;
 
     @PostMapping(value = "/register",
                  consumes = {MediaType.APPLICATION_JSON_VALUE})
@@ -61,7 +67,9 @@ public class AuthController {
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
-        Token token = new Token();
-        return ResponseEntity.ok(new CodeResponse("def" + token.generate_access_token(125)));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtUtils.generateJwtToken(authentication);
+
+        return ResponseEntity.ok(new CodeResponse(jwt));
     }
 }
