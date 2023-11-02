@@ -5,7 +5,7 @@ import java.util.stream.IntStream;
 
 public class Token {
 
-    public String generate_access_token(int targetStringLength){
+    public String generateAccessToken(int targetStringLength){
         int leftlimit=48; // numeral '0'
         int rightlimit=122; // letter 'z'
 

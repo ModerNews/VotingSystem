@@ -1,6 +1,5 @@
 package org.alo.votingsystem.security;
 
-import org.alo.votingsystem.security.jwt.AuthTokenFilter;
 import org.alo.votingsystem.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureOrder;
@@ -21,7 +20,8 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
-import org.alo.votingsystem.security.jwt.AuthEntryPointJWT;
+//import org.alo.votingsystem.security.jwt.AuthTokenFilter;
+//import org.alo.votingsystem.security.jwt.AuthEntryPointJWT;
 
 @Configuration
 @EnableWebSecurity
@@ -29,26 +29,33 @@ public class WebSecurityConfig {
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
-    @Autowired
-    private AuthEntryPointJWT unauthorizedHandler;
+//    @Autowired
+//    private AuthEntryPointJWT unauthorizedHandler;
 
-    @Bean
-    public AuthTokenFilter authenticationJwtTokenFilter() {
-        return new AuthTokenFilter();
-    }
+//    @Bean
+//    public AuthTokenFilter authenticationJwtTokenFilter() {
+//        return new AuthTokenFilter();
+//    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
-            .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+//            .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests((requests) ->
-                requests.requestMatchers("/", "/home", "/auth/**").permitAll()
+                requests.requestMatchers("/", "/home", "/error").permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
-            );
+            )
+            .formLogin(form ->
+                    form.loginPage("/login").permitAll()
+                        .defaultSuccessUrl("/")
+                        .failureUrl("/login?error=true"))
+            .logout(logout -> logout.logoutUrl("/logout").permitAll());
 
         http.authenticationProvider(authenticationProvider());
-        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+//        This is for OAuth2 resource server, not for app
+//        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

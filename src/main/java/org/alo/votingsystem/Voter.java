@@ -11,7 +11,7 @@ public class Voter {
 
     public String generate_access_token(){
         Token token = new Token();
-        return token.generate_access_token(128);
+        return token.generateAccessToken(128);
     }
 
     public Voter(long id, String group) {
