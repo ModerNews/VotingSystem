@@ -13,9 +13,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.io.IOException;
+import java.net.URLEncoder;
 
 
 @RestController
@@ -51,16 +54,33 @@ public class AuthController {
         return ResponseEntity.ok("User registered successfully");
     }
 
-    @GetMapping(value="/code")
+    @GetMapping(value="/code",
+                produces={MediaType.APPLICATION_FORM_URLENCODED_VALUE})
     public void loginUser(HttpServletResponse response, @Valid AuthorizationRequest request) throws IOException {
         // TODO store code and serialized AuthorizationRequest
         Token token = new Token();
-        // Assert Redirect_uri is not null nor empty
-        if (request.getRedirect_uri() == null) {
-            request.setRedirect_uri("http://localhost:8080");
-        }else if (request.getRedirect_uri().trim().length() == 0) {
-            request.setRedirect_uri("http://localhost:8080");
+        // Assure Redirect_uri is not null nor empty
+        try {
+            Boolean requestValid = request.isValid();
+        } catch (IllegalArgumentException e ) {
+            String[] message = e.getMessage().split(";");
+            if (message[0].equals("server")) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, message[1]);
+            } else {
+                UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(request.getRedirect_uri().trim());
+                if (request.getState() != null && !(request.getState().trim().length() > 0)) {
+                    uriBuilder.queryParam("state", URLEncoder.encode(request.getState()));
+                }uriBuilder.queryParam("error", message[0]);
+                uriBuilder.queryParam("error_description", URLEncoder.encode(message[1], "ASCII"));
+                response.sendRedirect(uriBuilder.build().toUriString());
+            }
+            return;
         }
-        response.sendRedirect(request.getRedirect_uri().trim() + "/code?code=def" + token.generateAccessToken(125));
+        UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(request.getRedirect_uri().trim());
+        uri.queryParam("code", "def" + token.generateAccessToken(125));
+        uri.queryParam("state", URLEncoder.encode(request.getState()));
+        String uriString = uri.build().toUriString();
+
+        response.sendRedirect(uriString);
     }
 }
