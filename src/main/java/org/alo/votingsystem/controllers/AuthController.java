@@ -1,8 +1,10 @@
 package org.alo.votingsystem.controllers;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.alo.votingsystem.models.AuthGrant;
 import org.alo.votingsystem.models.Token;
 import org.alo.votingsystem.models.User;
+import org.alo.votingsystem.repository.AuthGrantRepository;
 import org.alo.votingsystem.repository.UserRepository;
 import org.alo.votingsystem.requests.AuthorizationRequest;
 import org.alo.votingsystem.requests.RegisterRequest;
@@ -33,6 +35,9 @@ public class AuthController {
     @Autowired
     PasswordEncoder encoder;
 
+    @Autowired
+    AuthGrantRepository authGrantRepository;
+
 //    @Autowired
 //    private JwtUtils jwtUtils;
 
@@ -57,7 +62,6 @@ public class AuthController {
     @GetMapping(value="/code",
                 produces={MediaType.APPLICATION_FORM_URLENCODED_VALUE})
     public void loginUser(HttpServletResponse response, @Valid AuthorizationRequest request) throws IOException {
-        // TODO store code and serialized AuthorizationRequest
         Token token = new Token();
         // Assure Redirect_uri is not null nor empty
         try {
@@ -76,11 +80,20 @@ public class AuthController {
             }
             return;
         }
+        String code = "def" + token.generateAccessToken(125);
+        AuthGrant grant = new AuthGrant(code, request);
+        authGrantRepository.save(grant);
         UriComponentsBuilder uri = UriComponentsBuilder.fromUriString(request.getRedirect_uri().trim());
-        uri.queryParam("code", "def" + token.generateAccessToken(125));
+        uri.queryParam("code", code);
         uri.queryParam("state", URLEncoder.encode(request.getState()));
         String uriString = uri.build().toUriString();
 
         response.sendRedirect(uriString);
+    }
+
+    @GetMapping(value="/token",
+                produces={MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+    public ResponseEntity<?> getToken() {
+        return ResponseEntity.ok("Token");
     }
 }
